@@ -21,10 +21,10 @@
     </div>
 
     <div class="nav-center">
-      <div class="event-timer-pill" title="150 Minutes Allotted Prototyping Window">
+      <div class="event-timer-pill" id="navEventTimerPill" style="display: none;" title="Admin Controlled Hackathon Timer">
         <span class="timer-dot"></span>
         <span style="color: var(--text-muted); font-size: 0.75rem;">TIME REMAINING:</span>
-        <span class="timer-val" id="eventTimerDisplay">02:30:00</span>
+        <span class="timer-val" id="eventTimerDisplay">--:--:--</span>
       </div>
     </div>
 
@@ -332,6 +332,69 @@
           <button class="admin-tab-btn" id="btn-admblock-coordinators" onclick="switchAdminBlockTab('coordinators')">
             👔 Event Coordinators
           </button>
+          <button class="admin-tab-btn" id="btn-admblock-timer" onclick="switchAdminBlockTab('timer')">
+            ⏱️ Event Timer Controls
+          </button>
+        </div>
+
+        <!-- Block Tab: Admin Event Timer Control (Broadcast to All Users) -->
+        <div class="admin-block-panel" id="panel-admblock-timer" style="margin-top: 1.25rem; display: none;">
+          <div style="background: rgba(10, 15, 26, 0.85); border: 1px solid var(--border-card); border-radius: var(--radius-md); padding: 1.5rem; max-width: 650px;">
+            <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem;">
+              <span style="font-size: 1.6rem;">⏱️</span>
+              <div>
+                <h4 style="font-size: 1.15rem; color: #fff; margin: 0;">Admin Event Timer Manager</h4>
+                <p style="font-size: 0.82rem; color: var(--text-secondary); margin: 0.2rem 0 0;">
+                  Set, start, or remove the synchronized countdown timer for all participants across all tabs and devices.
+                </p>
+              </div>
+            </div>
+
+            <div style="background: rgba(0, 242, 254, 0.05); border: 1px solid rgba(0, 242, 254, 0.2); border-radius: var(--radius-md); padding: 1rem; margin: 1.25rem 0; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+              <div>
+                <div style="font-size: 0.75rem; color: var(--text-muted); font-family: var(--font-mono); text-transform: uppercase;">Current Broadcast Status</div>
+                <div id="adminTimerStatusText" style="font-size: 1.05rem; font-weight: 700; color: var(--text-muted); margin-top: 0.25rem;">
+                  Inactive (No Timer Shown to Users)
+                </div>
+              </div>
+              <div id="adminTimerLivePreview" style="font-family: var(--font-mono); font-size: 1.5rem; font-weight: 800; color: var(--neon-cyan);">
+                --:--:--
+              </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 1.25rem;">
+              <label class="form-label" for="adminTimerDurationInput">Allotted Duration (Minutes)</label>
+              <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+                <input 
+                  type="number" 
+                  id="adminTimerDurationInput" 
+                  class="form-input" 
+                  value="150" 
+                  min="1" 
+                  max="1440" 
+                  style="max-width: 140px; font-family: var(--font-mono); font-size: 1rem;" 
+                />
+                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                  <button type="button" class="btn btn-outline btn-sm" onclick="setTimerDurationPreset(60)">1 Hour</button>
+                  <button type="button" class="btn btn-outline btn-sm" onclick="setTimerDurationPreset(120)">2 Hours</button>
+                  <button type="button" class="btn btn-outline btn-sm" onclick="setTimerDurationPreset(150)">2.5 Hours</button>
+                  <button type="button" class="btn btn-outline btn-sm" onclick="setTimerDurationPreset(180)">3 Hours</button>
+                </div>
+              </div>
+              <span style="font-size: 0.78rem; color: var(--text-muted); margin-top: 0.4rem; display: block;">
+                The countdown will begin immediately upon broadcasting and will be visible in the top navbar for all active users.
+              </span>
+            </div>
+
+            <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 1.25rem;">
+              <button type="button" class="btn btn-primary" onclick="adminStartTimer()">
+                <span>⚡ Start & Broadcast Timer to All Users</span>
+              </button>
+              <button type="button" class="btn btn-outline" style="color: var(--neon-rose); border-color: rgba(244, 63, 94, 0.35);" onclick="adminRemoveTimer()">
+                <span>🛑 Remove Timer for All Users</span>
+              </button>
+            </div>
+          </div>
         </div>
 
         <!-- Block Tab 0: Members Currently Working Live on Website -->

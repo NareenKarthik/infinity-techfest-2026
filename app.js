@@ -20,7 +20,7 @@ const State = {
   coordinators: JSON.parse(localStorage.getItem('shristi_coordinators') || localStorage.getItem('innovex_coordinators') || '[]'),
   activeFilter: 'all',
   searchQuery: '',
-  countdownEndTime: null
+  adminTimer: JSON.parse(localStorage.getItem('shristi_admin_timer') || 'null')
 };
 
 // Cross-tab Synchronization Channel
@@ -47,6 +47,14 @@ if (syncChannel) {
     } else if (type === 'COORDINATORS_UPDATED') {
       State.coordinators = payload.coordinators;
       renderAdminTables();
+    } else if (type === 'TIMER_BROADCAST') {
+      State.adminTimer = payload;
+      updateTimerUI();
+      if (payload && payload.active) {
+        showToast(`Official Timer broadcast by Admin: ${payload.durationMinutes} Minutes`, 'info');
+      } else {
+        showToast('Hackathon timer removed by Admin.', 'info');
+      }
     }
   };
 }
@@ -68,6 +76,9 @@ window.addEventListener('storage', (e) => {
   } else if (e.key === 'shristi_coordinators' || e.key === 'innovex_coordinators') {
     State.coordinators = JSON.parse(e.newValue || '[]');
     renderAdminTables();
+  } else if (e.key === 'shristi_admin_timer') {
+    State.adminTimer = JSON.parse(e.newValue || 'null');
+    updateTimerUI();
   }
 });
 
@@ -981,38 +992,191 @@ function openProblemModal(problemId) {
   openModal('problemModal');
 }
 
-// Countdown Timer (150 Minutes)
-function initCountdownTimer() {
-  const timerDisplay = document.getElementById('eventTimerDisplay');
-  if (!timerDisplay) return;
+// Admin-Controlled Countdown Timer (Given strictly by Admin for all users)
+let timerIntervalId = null;
 
-  const savedEnd = localStorage.getItem('shristi_timer_end') || localStorage.getItem('innovex_timer_end');
-  if (savedEnd) {
-    State.countdownEndTime = parseInt(savedEnd, 10);
+function initCountdownTimer() {
+  // Clear any legacy hardcoded timer endpoints from localStorage
+  localStorage.removeItem('shristi_timer_end');
+  localStorage.removeItem('innovex_timer_end');
+
+  // Sync with backend timer API
+  if (typeof MongoAPI !== 'undefined') {
+    fetch(`${MongoAPI.baseUrl}/api/timer`)
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.success && data.timer) {
+          State.adminTimer = data.timer;
+          if (data.timer.active) {
+            localStorage.setItem('shristi_admin_timer', JSON.stringify(data.timer));
+          } else {
+            localStorage.removeItem('shristi_admin_timer');
+          }
+          updateTimerUI();
+        }
+      })
+      .catch(() => {
+        updateTimerUI();
+      });
   } else {
-    State.countdownEndTime = Date.now() + (HACKATHON_CONFIG.durationMinutes * 60 * 1000);
-    localStorage.setItem('shristi_timer_end', State.countdownEndTime.toString());
+    updateTimerUI();
   }
 
-  function updateTimer() {
-    const now = Date.now();
-    const remaining = Math.max(0, State.countdownEndTime - now);
+  if (timerIntervalId) clearInterval(timerIntervalId);
+  timerIntervalId = setInterval(updateTimerUI, 1000);
+}
 
-    const hours = Math.floor(remaining / (1000 * 60 * 60));
-    const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
-    const seconds = Math.floor((remaining % (1000 * 60)) / 1000);
+function updateTimerUI() {
+  const navTimerPill = document.getElementById('navEventTimerPill');
+  const timerDisplay = document.getElementById('eventTimerDisplay');
+  const adminStatusText = document.getElementById('adminTimerStatusText');
+  const adminLivePreview = document.getElementById('adminTimerLivePreview');
 
-    const pad = n => String(n).padStart(2, '0');
-    timerDisplay.textContent = `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+  const timer = State.adminTimer;
 
+  // 1. If timer is not active or not given by Admin -> Completely remove/hide the timer section
+  if (!timer || !timer.active || !timer.endTime) {
+    if (navTimerPill) navTimerPill.style.display = 'none';
+    if (adminStatusText) {
+      adminStatusText.textContent = 'Inactive (No Timer Shown to Users)';
+      adminStatusText.style.color = 'var(--text-muted)';
+    }
+    if (adminLivePreview) {
+      adminLivePreview.textContent = '--:--:--';
+      adminLivePreview.style.color = 'var(--text-muted)';
+    }
+    return;
+  }
+
+  // 2. Timer is active (given by Admin) -> Display and run countdown
+  if (navTimerPill) navTimerPill.style.display = 'inline-flex';
+
+  const now = Date.now();
+  const remaining = Math.max(0, timer.endTime - now);
+
+  const hours = Math.floor(remaining / (1000 * 60 * 60));
+  const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+  const seconds = Math.floor((remaining % (1000 * 60)) / 1000);
+
+  const pad = n => String(n).padStart(2, '0');
+  const timeFormatted = `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+
+  if (timerDisplay) {
+    timerDisplay.textContent = timeFormatted;
     if (remaining <= 0) {
       timerDisplay.style.color = 'var(--neon-rose)';
       timerDisplay.textContent = 'TIME EXPIRED';
+    } else {
+      timerDisplay.style.color = 'var(--neon-cyan)';
     }
   }
 
-  updateTimer();
-  setInterval(updateTimer, 1000);
+  if (adminLivePreview) {
+    adminLivePreview.textContent = remaining > 0 ? timeFormatted : 'TIME EXPIRED';
+    adminLivePreview.style.color = remaining > 0 ? 'var(--neon-cyan)' : 'var(--neon-rose)';
+  }
+
+  if (adminStatusText) {
+    if (remaining > 0) {
+      adminStatusText.textContent = `● Active Broadcast (${timer.durationMinutes || 'Custom'} min window)`;
+      adminStatusText.style.color = 'var(--neon-emerald)';
+    } else {
+      adminStatusText.textContent = '● Window Closed (Time Expired)';
+      adminStatusText.style.color = 'var(--neon-rose)';
+    }
+  }
+}
+
+// Admin Timer Actions (Controlled by SuperAdmin)
+function adminStartTimer() {
+  if (!State.currentUser || State.currentUser.role !== 'SuperAdmin') {
+    showToast('Only Administrator Nareen Karthik can broadcast event timers.', 'error');
+    return;
+  }
+
+  const durationInput = document.getElementById('adminTimerDurationInput');
+  const minutes = durationInput ? parseInt(durationInput.value, 10) : 150;
+
+  if (isNaN(minutes) || minutes <= 0) {
+    showToast('Please enter a valid duration in minutes.', 'error');
+    return;
+  }
+
+  const endTime = Date.now() + (minutes * 60 * 1000);
+  const timerPayload = {
+    active: true,
+    endTime: endTime,
+    durationMinutes: minutes,
+    startedBy: State.currentUser.username,
+    startedAt: new Date().toISOString()
+  };
+
+  State.adminTimer = timerPayload;
+  localStorage.setItem('shristi_admin_timer', JSON.stringify(timerPayload));
+
+  // Push to backend server
+  if (typeof MongoAPI !== 'undefined') {
+    fetch(`${MongoAPI.baseUrl}/api/timer`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(timerPayload)
+    }).catch(err => console.warn('Timer server sync error:', err));
+  }
+
+  // Broadcast to other tabs & windows
+  if (syncChannel) {
+    syncChannel.postMessage({
+      type: 'TIMER_BROADCAST',
+      payload: timerPayload
+    });
+  }
+
+  updateTimerUI();
+  showToast(`⚡ Official event timer of ${minutes} minutes started and broadcast to all users!`, 'success');
+}
+
+function adminRemoveTimer() {
+  if (!State.currentUser || State.currentUser.role !== 'SuperAdmin') {
+    showToast('Only Administrator Nareen Karthik can modify event timers.', 'error');
+    return;
+  }
+
+  const timerPayload = {
+    active: false,
+    endTime: null,
+    durationMinutes: 150,
+    startedBy: null
+  };
+
+  State.adminTimer = null;
+  localStorage.removeItem('shristi_admin_timer');
+
+  // Push to backend server
+  if (typeof MongoAPI !== 'undefined') {
+    fetch(`${MongoAPI.baseUrl}/api/timer`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(timerPayload)
+    }).catch(err => console.warn('Timer server sync error:', err));
+  }
+
+  // Broadcast to other tabs & windows
+  if (syncChannel) {
+    syncChannel.postMessage({
+      type: 'TIMER_BROADCAST',
+      payload: timerPayload
+    });
+  }
+
+  updateTimerUI();
+  showToast('🛑 Event timer stopped and removed for all users.', 'info');
+}
+
+function setTimerDurationPreset(mins) {
+  const durationInput = document.getElementById('adminTimerDurationInput');
+  if (durationInput) {
+    durationInput.value = mins;
+  }
 }
 
 // Admin Tables Renderer & Dedicated Admin Block

@@ -566,6 +566,44 @@ app.post('/api/seed', requireDB, async (req, res) => {
   }
 });
 
+// 14. Admin Event Timer State (Broadcast to all users)
+let globalTimerState = {
+  active: false,
+  endTime: null,
+  durationMinutes: 150,
+  startedBy: null,
+  startedAt: null
+};
+
+app.get('/api/timer', (req, res) => {
+  res.json({ success: true, timer: globalTimerState });
+});
+
+app.post('/api/timer', (req, res) => {
+  const { active, durationMinutes, startedBy } = req.body;
+  if (active) {
+    const mins = parseInt(durationMinutes, 10) || 150;
+    globalTimerState = {
+      active: true,
+      endTime: Date.now() + (mins * 60 * 1000),
+      durationMinutes: mins,
+      startedBy: startedBy || 'Administrator',
+      startedAt: new Date().toISOString()
+    };
+    console.log(`✔ Timer started by ${globalTimerState.startedBy}: ${mins} minutes`);
+  } else {
+    globalTimerState = {
+      active: false,
+      endTime: null,
+      durationMinutes: 150,
+      startedBy: null,
+      startedAt: null
+    };
+    console.log('ℹ Timer removed by admin for all users.');
+  }
+  res.json({ success: true, timer: globalTimerState });
+});
+
 // Fallback route to serve index.html
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
