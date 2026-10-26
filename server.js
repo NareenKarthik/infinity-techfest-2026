@@ -82,6 +82,18 @@ connectDB().then((res) => {
   }
 });
 
+// URL normalization for Vercel Serverless Function invocations
+app.use((req, res, next) => {
+  if (req.query && req.query.match) {
+    req.url = '/api/' + req.query.match.replace(/^\/+/, '');
+  } else if (req.query && req.query['...path']) {
+    req.url = '/api/' + req.query['...path'].replace(/^\/+/, '');
+  } else if (req.url && !req.url.startsWith('/api')) {
+    req.url = '/api' + (req.url.startsWith('/') ? req.url : '/' + req.url);
+  }
+  next();
+});
+
 // ==================== REST API ROUTES ====================
 
 // 1. Health & Database Status
