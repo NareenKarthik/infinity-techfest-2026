@@ -1,0 +1,1126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SHRISTI 2026 — Rapid Prototyping Hackathon Platform</title>
+  <meta name="description" content="Official management platform for SHRISTI 2026 Rapid Prototyping Hackathon. Problem statement selection, team locking, and project submission portal.">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚡</text></svg>">
+</head>
+<body>
+
+  <!-- Top Navigation Bar -->
+  <header class="navbar" id="mainNavbar">
+    <div class="brand-section">
+      <div class="brand-badge">⚡</div>
+      <div class="brand-title-group">
+        <h1>SHRISTI <span class="gradient-cyan">2026</span></h1>
+        <div class="brand-subtitle">Rapid Prototyping Hackathon</div>
+      </div>
+    </div>
+
+    <div class="nav-center">
+      <div class="event-timer-pill" title="150 Minutes Allotted Prototyping Window">
+        <span class="timer-dot"></span>
+        <span style="color: var(--text-muted); font-size: 0.75rem;">TIME REMAINING:</span>
+        <span class="timer-val" id="eventTimerDisplay">02:30:00</span>
+      </div>
+    </div>
+
+      <div id="mongoStatusPill" class="mongo-status-pill offline" title="MongoDB User Database Status (Click to manage)" onclick="openModal('adminModal'); switchAdminTab('mongo');">
+        <span class="mongo-icon">🍃</span>
+        <span class="mongo-dot"></span>
+        <span id="mongoStatusText">MongoDB: Standby</span>
+      </div>
+
+      <button class="btn btn-outline btn-sm" onclick="openModal('rulesModal')">
+        <span>📜 General Rules</span>
+      </button>
+
+
+      <button class="btn btn-outline btn-sm" onclick="openModal('adminModal')" title="Inspect Google Sheets live records and configure webhook">
+        <span>📊 Admin & Sheets</span>
+      </button>
+
+      <!-- User Profile or Login Button -->
+      <div id="navUserProfile" class="user-profile-pill" style="display: none;">
+        <div class="user-avatar" id="navUserInitials">AR</div>
+        <div class="user-meta">
+          <span class="user-meta-name" id="navUserName">Alex Rivera</span>
+          <span class="user-meta-team" id="navUserTeam">Team CyberPulse</span>
+        </div>
+        <button class="btn btn-outline btn-sm" style="padding: 0.2rem 0.5rem; margin-left: 0.25rem;" onclick="logoutUser()" title="Log out">
+          ✕
+        </button>
+      </div>
+
+      <button id="navLoginBtn" class="btn btn-primary btn-sm" onclick="openModal('loginModal')">
+        <span>Log In</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ==================== STEP 1: AUTHENTICATION & TEAM REGISTRATION ==================== -->
+  <section class="login-first-step-container" id="loginFirstStepSection">
+    <div class="login-first-step-card" style="max-width: 580px;">
+      <div class="login-step-badge">
+        <span>● STEP 1 : AUTHENTICATION GATEWAY</span>
+      </div>
+
+      <div class="login-icon-glow" style="margin: 1.1rem auto 0.75rem; width: 62px; height: 62px; font-size: 1.65rem;">
+        🔒
+      </div>
+
+      <h2 class="login-step-title" style="margin-bottom: 0.35rem;">
+        SHRISTI <span class="gradient-cyan">2026</span> Portal
+      </h2>
+      <p class="login-step-subtitle" style="margin-bottom: 1.25rem;">
+        Official hackathon portal for Administrators, Event Coordinators, and Participant Teams.
+      </p>
+
+      <!-- Step 1 Navigation Tabs: Login vs Register Team -->
+      <div class="admin-tabs" style="margin-bottom: 1.25rem;">
+        <button type="button" class="admin-tab-btn active" id="btnStep1TabLogin" onclick="switchStep1Tab('login')" style="flex: 1; text-align: center;">
+          🔑 Log In
+        </button>
+        <button type="button" class="admin-tab-btn" id="btnStep1TabRegister" onclick="switchStep1Tab('register')" style="flex: 1; text-align: center;">
+          🚀 Register Team & Teammates
+        </button>
+      </div>
+
+      <!-- TAB 1: LOGIN PANEL (Admin, Coordinators, Registered Teams) -->
+      <div id="step1LoginPanel">
+        <!-- Step 1 Login Form -->
+        <form id="firstStepLoginForm" style="display: flex; flex-direction: column; gap: 1.15rem; text-align: left;">
+          <div class="form-group">
+            <label class="form-label" for="firstStepUsername">User ID / Team Username</label>
+            <input 
+              type="text" 
+              id="firstStepUsername" 
+              class="form-input" 
+              placeholder="Enter your user ID or team username" 
+              required 
+              autocomplete="username" 
+            />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="firstStepPassword">Password</label>
+            <input 
+              type="password" 
+              id="firstStepPassword" 
+              class="form-input" 
+              placeholder="Enter password" 
+              required 
+              autocomplete="current-password" 
+            />
+          </div>
+
+          <button type="submit" class="btn btn-primary" style="padding: 0.85rem; width: 100%; font-size: 0.95rem; margin-top: 0.35rem;">
+            <span>Log In & Enter Hackathon</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+          </button>
+        </form>
+
+        <div style="margin-top: 1.25rem; font-size: 0.82rem; color: var(--text-muted); text-align: center;">
+          New team? <a href="javascript:void(0)" onclick="switchStep1Tab('register')" style="color: var(--neon-cyan); text-decoration: underline;">Click here to register your team and teammates</a>.
+        </div>
+      </div>
+
+      <!-- TAB 2: REGISTER TEAM & TEAMMATES PANEL -->
+      <div id="step1RegisterPanel" style="display: none; text-align: left;">
+        <form id="registerTeamForm" style="display: flex; flex-direction: column; gap: 1rem;">
+          <div class="form-group">
+            <label class="form-label" for="regTeamName">Team Name *</label>
+            <input 
+              type="text" 
+              id="regTeamName" 
+              class="form-input" 
+              placeholder="e.g. CyberPulse or Quantum Innovators" 
+              required 
+            />
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+            <div class="form-group">
+              <label class="form-label" for="regLeadFullName">Team Lead Full Name *</label>
+              <input 
+                type="text" 
+                id="regLeadFullName" 
+                class="form-input" 
+                placeholder="e.g. Alex Rivera" 
+                required 
+              />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="regLeadUsername">Team Lead User ID *</label>
+              <input 
+                type="text" 
+                id="regLeadUsername" 
+                class="form-input" 
+                placeholder="e.g. alex.cyber" 
+                required 
+              />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="regTeamPassword">Team Login Password *</label>
+            <input 
+              type="password" 
+              id="regTeamPassword" 
+              class="form-input" 
+              placeholder="Create password for your team" 
+              required 
+            />
+          </div>
+
+          <!-- Teammates List -->
+          <div style="margin-top: 0.5rem; padding-top: 0.75rem; border-top: 1px solid rgba(255, 255, 255, 0.08);">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
+              <label class="form-label" style="margin-bottom: 0;">Teammates (Members of this Team)</label>
+              <button type="button" class="btn btn-outline btn-sm" onclick="addTeammateRow()" style="font-size: 0.72rem; padding: 0.2rem 0.6rem;">
+                + Add Teammate
+              </button>
+            </div>
+            <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.65rem;">
+              Add your team members. They will be listed in the Admin Roster and Google Sheet 1.
+            </p>
+
+            <div id="teammatesFieldsContainer" style="display: flex; flex-direction: column; gap: 0.65rem;">
+              <!-- Dynamic teammate entries -->
+              <div class="teammate-row" style="display: grid; grid-template-columns: 1.2fr 1fr auto; gap: 0.5rem; align-items: center;">
+                <input type="text" class="form-input teammate-name-input" placeholder="Teammate 2 Name (e.g. Sarah Chen)" required />
+                <input type="text" class="form-input teammate-role-input" placeholder="Role (e.g. Fullstack Dev)" value="Developer" required />
+                <button type="button" class="btn btn-outline btn-sm" style="color: var(--neon-rose); border-color: rgba(244, 63, 94, 0.3); padding: 0.5rem;" onclick="removeTeammateRow(this)" title="Remove">✕</button>
+              </div>
+              <div class="teammate-row" style="display: grid; grid-template-columns: 1.2fr 1fr auto; gap: 0.5rem; align-items: center;">
+                <input type="text" class="form-input teammate-name-input" placeholder="Teammate 3 Name (e.g. Marcus Vance)" />
+                <input type="text" class="form-input teammate-role-input" placeholder="Role (e.g. AI Engineer)" value="AI Specialist" />
+                <button type="button" class="btn btn-outline btn-sm" style="color: var(--neon-rose); border-color: rgba(244, 63, 94, 0.3); padding: 0.5rem;" onclick="removeTeammateRow(this)" title="Remove">✕</button>
+              </div>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary" style="padding: 0.85rem; width: 100%; font-size: 0.95rem; margin-top: 0.75rem;">
+            <span>🚀 Complete Registration & Enter Hackathon</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+          </button>
+
+          <div style="font-size: 0.82rem; color: var(--text-muted); text-align: center; margin-top: 0.35rem;">
+            Already registered? <a href="javascript:void(0)" onclick="switchStep1Tab('login')" style="color: var(--neon-cyan); text-decoration: underline;">Switch to Log In</a>.
+          </div>
+        </form>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ==================== STEP 2: MAIN HACKATHON DASHBOARD ==================== -->
+  <div id="appDashboardSection" style="display: none;">
+    <!-- Real-time Team Lock Banner Strip -->
+    <section class="team-status-strip not-selected" id="teamStatusStrip">
+      <div class="status-left">
+        <div class="status-icon-badge" id="teamStatusIcon">⚡</div>
+        <div>
+          <div class="status-text-title" id="teamStatusTitle">Team Status Initializing...</div>
+          <div class="status-text-sub" id="teamStatusSub">Loading team data and problem selections...</div>
+        </div>
+      </div>
+      <div id="teamStatusRight">
+        <!-- Quick link or action -->
+      </div>
+    </section>
+
+    <!-- ==================== DEDICATED ADMIN BLOCK (VISIBLE IN ADMIN VIEW ONLY) ==================== -->
+    <section id="adminDedicatedBlock" class="admin-dedicated-panel" style="display: none;">
+      <div class="admin-panel-card">
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <span class="hero-pill-badge" style="background: rgba(0, 242, 254, 0.15); border-color: var(--neon-cyan); color: var(--neon-cyan);">
+              👑 ORGANIZER & SUPERADMIN CONTROL CENTER
+            </span>
+            <h2 style="font-size: 1.85rem; color: #fff; margin: 0.4rem 0 0.2rem;">
+              Admin Control Center & Live Sheets Monitor
+            </h2>
+            <p style="font-size: 0.85rem; color: var(--text-secondary);">
+              Logged in as <strong style="color: #fff;">Nareen Karthik (SuperAdmin)</strong>. Real-time tracking of team members, problem statement assignments, participant GitHub repos, and Google Sheets sync.
+            </p>
+          </div>
+          <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+            <button class="btn btn-primary btn-sm" onclick="initFreshGoogleSheets()">
+              <span>⚡ Initialize Fresh Google Sheets</span>
+            </button>
+            <button class="btn btn-outline btn-sm" onclick="openModal('adminModal')">
+              <span>📊 Fullscreen Database Modal</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 5 Metric Cards (with Live Workforce Counter) -->
+        <div class="admin-metrics-grid">
+          <div class="admin-metric-box" style="border-color: rgba(0, 242, 254, 0.4); background: linear-gradient(135deg, rgba(0, 242, 254, 0.08), rgba(10, 15, 26, 0.9));">
+            <div class="admin-metric-icon" style="background: rgba(0, 242, 254, 0.18); border-color: var(--neon-cyan); color: var(--neon-cyan);">⚡</div>
+            <div>
+              <div class="admin-metric-val" id="metricMembersWorking" style="color: var(--neon-cyan);">0</div>
+              <div class="admin-metric-label">Members Working in Website</div>
+              <div id="metricWorkingBadge" style="font-size: 0.72rem; color: var(--neon-emerald); font-family: var(--font-mono); margin-top: 0.2rem; display: flex; align-items: center; gap: 0.35rem;">
+                <span class="status-online-dot"></span> <span id="metricWorkingSubtext">0 Active Now</span>
+              </div>
+            </div>
+          </div>
+          <div class="admin-metric-box">
+            <div class="admin-metric-icon">👥</div>
+            <div>
+              <div class="admin-metric-val" id="metricTotalMembers">0</div>
+              <div class="admin-metric-label">Total Registered Members</div>
+              <div id="metricTeamsRegisteredSub" style="font-size: 0.72rem; color: var(--text-muted); font-family: var(--font-mono); margin-top: 0.2rem;">
+                Across <span id="metricTotalTeams">0</span> Teams
+              </div>
+            </div>
+          </div>
+          <div class="admin-metric-box">
+            <div class="admin-metric-icon">🟢</div>
+            <div>
+              <div class="admin-metric-val" id="metricActiveLogins">0</div>
+              <div class="admin-metric-label">Members Logged In</div>
+              <div style="font-size: 0.72rem; color: var(--text-muted); font-family: var(--font-mono); margin-top: 0.2rem;">
+                Live Attendance Record
+              </div>
+            </div>
+          </div>
+          <div class="admin-metric-box">
+            <div class="admin-metric-icon">🎯</div>
+            <div>
+              <div class="admin-metric-val" id="metricProblemsPicked">0</div>
+              <div class="admin-metric-label">Problems Selected</div>
+              <div style="font-size: 0.72rem; color: var(--text-muted); font-family: var(--font-mono); margin-top: 0.2rem;">
+                Teams Prototyping
+              </div>
+            </div>
+          </div>
+          <div class="admin-metric-box">
+            <div class="admin-metric-icon">🚀</div>
+            <div>
+              <div class="admin-metric-val" id="metricSubmissionsReceived">0</div>
+              <div class="admin-metric-label">Submissions Received</div>
+              <div style="font-size: 0.72rem; color: var(--text-muted); font-family: var(--font-mono); margin-top: 0.2rem;">
+                Repos & Demos
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Navigation Tabs inside Admin Block -->
+        <div class="admin-tabs" style="margin-top: 1rem;">
+          <button class="admin-tab-btn active" id="btn-admblock-working" onclick="switchAdminBlockTab('working')">
+            ⚡ Members Working Live (<span id="tabCountWorking">0</span>)
+          </button>
+          <button class="admin-tab-btn" id="btn-admblock-teams" onclick="switchAdminBlockTab('teams')">
+            👥 Team Members & Logins (Roster)
+          </button>
+          <button class="admin-tab-btn" id="btn-admblock-adduser" onclick="switchAdminBlockTab('adduser')">
+            ➕ Add User / Team
+          </button>
+          <button class="admin-tab-btn" id="btn-admblock-problems" onclick="switchAdminBlockTab('problems')">
+            🎯 Team Problem Statements
+          </button>
+          <button class="admin-tab-btn" id="btn-admblock-submissions" onclick="switchAdminBlockTab('submissions')">
+            🐙 Participant Repos & Deliverables
+          </button>
+          <button class="admin-tab-btn" id="btn-admblock-coordinators" onclick="switchAdminBlockTab('coordinators')">
+            👔 Event Coordinators
+          </button>
+        </div>
+
+        <!-- Block Tab 0: Members Currently Working Live on Website -->
+        <div class="admin-block-panel" id="panel-admblock-working" style="margin-top: 1.25rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
+            <div>
+              <h4 style="color: #fff; font-size: 1.05rem; margin-bottom: 0.2rem;">Active Workforce Live Monitor</h4>
+              <span style="font-size: 0.85rem; color: var(--text-secondary);">Real-time roster of all administrators, coordinators, and participant team members currently working in the website.</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              <span class="badge" style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); color: var(--neon-emerald); font-family: var(--font-mono); font-size: 0.78rem; padding: 0.35rem 0.85rem; border-radius: 999px;">
+                ● <span id="badgeActiveWorkingCount">0</span> Members Working Now
+              </span>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="cyber-table">
+              <thead>
+                <tr>
+                  <th>Member</th>
+                  <th>Username</th>
+                  <th>Role</th>
+                  <th>Team / Department</th>
+                  <th>Work Status & Current Activity</th>
+                  <th>Session Start</th>
+                </tr>
+              </thead>
+              <tbody id="adminWorkingMembersTbody">
+                <!-- Dynamically populated from State -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Block Tab 1: Which Member is in Which Team & Logins -->
+        <div class="admin-block-panel" id="panel-admblock-teams" style="margin-top: 1.25rem; display: none;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
+            <span style="font-size: 0.85rem; color: var(--text-secondary);">Real-time participant roster showing team memberships and live login status.</span>
+            <div id="adminRosterDownloadContainer" style="display: flex; gap: 0.5rem; align-items: center;">
+              <button class="btn btn-primary btn-sm" onclick="switchAdminBlockTab('adduser')">
+                <span>➕ Add User / Team</span>
+              </button>
+              <button class="btn btn-outline btn-sm" id="btnAdminDownloadRoster" onclick="exportTeamRosterCSV()">
+                <span>📥 Download Team Roster (CSV)</span>
+              </button>
+            </div>
+          </div>
+          <div class="team-roster-grid" id="adminTeamRosterGrid">
+            <!-- Dynamically populated from State.registeredTeams and attendanceLog -->
+          </div>
+        </div>
+
+        <!-- Block Tab 1.5: Add User / Provision Account on Website -->
+        <div class="admin-block-panel" id="panel-admblock-adduser" style="margin-top: 1.25rem; display: none;">
+          <div style="background: rgba(14, 20, 32, 0.85); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1.5rem; margin-bottom: 1.5rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem; flex-wrap: wrap; gap: 0.5rem;">
+              <div>
+                <span class="hero-pill-badge" style="background: rgba(0, 242, 254, 0.12); border-color: var(--neon-cyan); color: var(--neon-cyan); margin-bottom: 0.35rem;">
+                  👑 ADMIN USER PROVISIONING
+                </span>
+                <h3 style="font-size: 1.25rem; color: #fff; margin: 0.3rem 0 0.2rem;">Add User & Provision Account</h3>
+                <p style="font-size: 0.82rem; color: var(--text-secondary); margin: 0;">
+                  Directly provision new accounts for participants, team leads, developers, or coordinators. Added users can immediately log in from the login screen.
+                </p>
+              </div>
+            </div>
+
+            <form id="adminAddUserForm" style="display: flex; flex-direction: column; gap: 1rem; margin-top: 1rem;">
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 0.85rem;">
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label class="form-label">Full Name *</label>
+                  <input type="text" id="adminNewUserFullName" class="form-input" placeholder="e.g. Maya Lin" required />
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label class="form-label">Username (Login ID) *</label>
+                  <input type="text" id="adminNewUserUsername" class="form-input" placeholder="e.g. maya.lin" required />
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label class="form-label">Password *</label>
+                  <input type="password" id="adminNewUserPassword" class="form-input" placeholder="Set login password" required />
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label class="form-label">Team / Organization Name *</label>
+                  <input type="text" id="adminNewUserTeamName" class="form-input" placeholder="e.g. Team Quantum" required />
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label class="form-label">Role *</label>
+                  <select id="adminNewUserRole" class="form-input" style="background: var(--bg-secondary); color: #fff;">
+                    <option value="Team Lead">🚀 Team Lead</option>
+                    <option value="Developer" selected>💻 Developer</option>
+                    <option value="UI/UX Designer">🎨 UI/UX Designer</option>
+                    <option value="AI Engineer">🤖 AI Engineer</option>
+                    <option value="Coordinator">👔 Event Coordinator</option>
+                    <option value="SuperAdmin">👑 SuperAdmin / Admin</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Extra Teammates Section -->
+              <div style="background: rgba(10, 15, 26, 0.6); border: 1px dashed var(--border-subtle); border-radius: var(--radius-sm); padding: 0.85rem 1rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.65rem;">
+                  <span style="font-size: 0.82rem; font-weight: 600; color: var(--text-secondary);">
+                    👥 Additional Teammates for this Team (Optional)
+                  </span>
+                  <button type="button" class="btn btn-outline btn-sm" onclick="addAdminTeammateRow()" style="font-size: 0.72rem; padding: 0.25rem 0.6rem;">
+                    + Add Teammate Row
+                  </button>
+                </div>
+                <div id="adminTeammatesContainer" style="display: flex; flex-direction: column; gap: 0.5rem;">
+                  <!-- Dynamic rows rendered here -->
+                </div>
+              </div>
+
+              <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 0.5rem;">
+                <button type="reset" class="btn btn-outline btn-sm">Clear</button>
+                <button type="submit" class="btn btn-primary btn-sm">
+                  <span>🚀 Add User & Save to Database</span>
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- User Directory in Admin Block -->
+          <div style="margin-top: 1.5rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
+              <div>
+                <h4 style="font-size: 1.05rem; color: #fff;">Platform User Directory (<span id="countAdminAllUsers">0</span>)</h4>
+                <span style="font-size: 0.8rem; color: var(--text-muted); font-family: var(--font-mono);">All authorized users, roles, and quick management controls.</span>
+              </div>
+            </div>
+            <div class="table-responsive">
+              <table class="cyber-table">
+                <thead>
+                  <tr>
+                    <th>Full Name</th>
+                    <th>Username</th>
+                    <th>Team / Track</th>
+                    <th>Role</th>
+                    <th>Status</th>
+                    <th>Admin Action</th>
+                  </tr>
+                </thead>
+                <tbody id="adminAllUsersTbody">
+                  <!-- Dynamically populated from State -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Block Tab 2: Which Team Selected Which Problem Statement -->
+        <div class="admin-block-panel" id="panel-admblock-problems" style="margin-top: 1.25rem; display: none;">
+          <div class="table-responsive">
+            <table class="cyber-table">
+              <thead>
+                <tr>
+                  <th>Team Name</th>
+                  <th>Selected Problem Statement</th>
+                  <th>Problem ID</th>
+                  <th>Selected By (Member)</th>
+                  <th>Timestamp</th>
+                  <th>Admin Action</th>
+                </tr>
+              </thead>
+              <tbody id="adminBlockSelectionsTbody">
+                <!-- Dynamically populated from State.teamSelections -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Block Tab 3: Participant GitHub Repos & Deliverables -->
+        <div class="admin-block-panel" id="panel-admblock-submissions" style="margin-top: 1.25rem; display: none;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
+            <span style="font-size: 0.85rem; color: var(--text-secondary);">Direct access to all submitted GitHub codebases, Drive explanations, and video demos.</span>
+            <div id="adminDownloadActionsContainer">
+              <button class="btn btn-primary btn-sm" id="btnAdminDownloadSubmissions" onclick="exportSubmissionsCSV()">
+                <span>📥 Download Submissions (CSV)</span>
+              </button>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="cyber-table">
+              <thead>
+                <tr>
+                  <th>Team Name</th>
+                  <th>Problem Statement</th>
+                  <th>Public GitHub Repo Link</th>
+                  <th>Project Explanation (Drive)</th>
+                  <th>Video Demo Link</th>
+                  <th>Submitted By</th>
+                  <th>Timestamp</th>
+                </tr>
+              </thead>
+              <tbody id="adminBlockSubmissionsTbody">
+                <!-- Dynamically populated from State.teamSubmissions -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Block Tab 4: Event Coordinators Management (Admin Authority) -->
+        <div class="admin-block-panel" id="panel-admblock-coordinators" style="margin-top: 1.25rem; display: none;">
+          <!-- Coordinator View-Only Alert when Coordinator is logged in -->
+          <div id="coordinatorRoleNotice" style="display: none; background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: var(--radius-md); padding: 1rem; margin-bottom: 1rem;">
+            <strong style="color: var(--neon-cyan);">👔 Coordinator View-Only Monitor:</strong>
+            <span style="font-size: 0.85rem; color: var(--text-secondary); margin-left: 0.5rem;">
+              You have coordinator access to monitor all events, teams, problem statements, and submissions. Data downloads and system modifications are restricted to Administrator Nareen Karthik.
+            </span>
+          </div>
+
+          <!-- Admin-Only Add Coordinator Form -->
+          <div id="adminCoordinatorFormContainer" style="background: rgba(14, 20, 32, 0.75); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1.25rem; margin-bottom: 1.25rem;">
+            <h4 style="font-size: 1.05rem; color: #fff; margin-bottom: 0.3rem;">Authorize New Event Coordinator</h4>
+            <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 1rem;">
+              As Administrator, you can add Event Coordinators. Coordinators can log in to view and monitor all events, teams, and submissions, but cannot download deliverables, reset selections, or modify sheets.
+            </p>
+            <form id="addCoordinatorForm" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)) auto; gap: 0.75rem; align-items: flex-end;">
+              <div class="form-group" style="margin-bottom: 0;">
+                <label class="form-label">Coordinator Name *</label>
+                <input type="text" id="coordFullName" class="form-input" placeholder="e.g. Dr. Ramesh Kumar" required />
+              </div>
+              <div class="form-group" style="margin-bottom: 0;">
+                <label class="form-label">User ID / Username *</label>
+                <input type="text" id="coordUsername" class="form-input" placeholder="e.g. ramesh.coord" required />
+              </div>
+              <div class="form-group" style="margin-bottom: 0;">
+                <label class="form-label">Password *</label>
+                <input type="password" id="coordPassword" class="form-input" placeholder="Set password" required />
+              </div>
+              <div class="form-group" style="margin-bottom: 0;">
+                <label class="form-label">Track / Department</label>
+                <input type="text" id="coordTrack" class="form-input" placeholder="e.g. Evaluation Committee" value="Evaluation Committee" />
+              </div>
+              <button type="submit" class="btn btn-primary btn-sm" style="height: 42px; white-space: nowrap;">
+                <span>+ Authorize Coordinator</span>
+              </button>
+            </form>
+          </div>
+
+          <!-- Authorized Coordinators Table -->
+          <div class="table-responsive">
+            <table class="cyber-table">
+              <thead>
+                <tr>
+                  <th>Coordinator Name</th>
+                  <th>User ID</th>
+                  <th>Track</th>
+                  <th>Permissions</th>
+                  <th>Status</th>
+                  <th>Admin Action</th>
+                </tr>
+              </thead>
+              <tbody id="adminCoordinatorsTbody">
+                <!-- Dynamically populated from State.coordinators -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  <!-- Hero Section -->
+  <main>
+    <section class="hero-section">
+      <div class="hero-header">
+        <div class="hero-pill-badge">
+          <span>● Closed Login System Active</span>
+          <span>|</span>
+          <span>Google Sheets Sync Ready</span>
+        </div>
+        <h1 class="hero-title">
+          Rapid Prototyping <span class="gradient-text">Hackathon Portal</span>
+        </h1>
+        <p class="hero-description">
+          All problem statements are hidden and encrypted. Select a card below to decrypt and permanently reveal your team's constant problem statement!
+        </p>
+
+        <div class="hero-meta-bar">
+          <div class="meta-item">
+            <span class="meta-icon">🎯</span>
+            <span><strong>Domain:</strong> AI, Multimedia, Cybersecurity & Intelligent Apps</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-icon">⏱</span>
+            <span><strong>Duration:</strong> 150 Minutes</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-icon">🚀</span>
+            <span><strong>Submission:</strong> Working Prototype + Brief Explanation</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Constant Problem Statement Showcase (Visible once revealed) -->
+    <div id="constantProblemShowcaseContainer"></div>
+
+    <!-- Search & Filter Controls -->
+    <section class="filter-bar">
+      <div class="search-box-wrapper">
+        <span class="search-icon">🔍</span>
+        <input 
+          type="text" 
+          id="problemSearchInput" 
+          class="search-input" 
+          placeholder="Filter challenge cards or keywords..."
+        />
+      </div>
+
+      <div class="filter-tags-group">
+        <button class="filter-chip active" data-filter="all" onclick="setFilter('all', this)">All Cards (13)</button>
+        <button class="filter-chip" data-filter="generative" onclick="setFilter('generative', this)">Generative AI</button>
+        <button class="filter-chip" data-filter="forensics" onclick="setFilter('forensics', this)">Cyber & Forensics</button>
+        <button class="filter-chip" data-filter="audio" onclick="setFilter('audio', this)">Audio & Speech</button>
+        <button class="filter-chip" data-filter="bio" onclick="setFilter('bio', this)">Biomedical & EdTech</button>
+      </div>
+    </section>
+
+    <!-- Problem Statements Grid (Populated dynamically as mystery or revealed) -->
+    <section class="cards-container" id="problemCardsContainer">
+      <!-- Populated via data.js + app.js -->
+    </section>
+
+    <!-- Final Submission Portal Section -->
+    <section class="submission-section" id="submissionSection">
+      <div class="submission-panel">
+        <div id="submissionContent">
+          <!-- Populated dynamically: Locked state OR Form state -->
+        </div>
+      </div>
+    </section>
+
+    <!-- Dedicated General Rules Section -->
+    <section class="submission-section" id="rulesSection" style="margin-top: 2rem;">
+      <div class="submission-panel" style="background: rgba(14, 20, 32, 0.7);">
+        <div style="margin-bottom: 2rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <span class="hero-pill-badge" style="margin-bottom: 0.5rem;">Official Code of Conduct</span>
+            <h2 style="font-size: 1.8rem; color: #fff;">General Hackathon Rules</h2>
+            <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 0.25rem;">
+              All participating teams must strictly adhere to these 10 rapid prototyping guidelines.
+            </p>
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="openModal('rulesModal')">
+            <span>View Fullscreen Modal</span>
+          </button>
+        </div>
+
+        <div class="rules-list" id="generalRulesList">
+          <!-- Populated from GENERAL_RULES via app.js -->
+        </div>
+      </div>
+    </section>
+  </main>
+  </div><!-- /#appDashboardSection -->
+
+  <!-- Site Footer -->
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <div style="display: flex; align-items: center; gap: 0.75rem;">
+        <div class="brand-badge" style="width: 32px; height: 32px; font-size: 1rem;">⚡</div>
+        <span style="font-weight: 700; font-size: 1.1rem; color: #fff;">SHRISTI 2026</span>
+      </div>
+      <p style="font-size: 0.82rem; color: var(--text-muted); max-width: 600px;">
+        AI, Multimedia, Cybersecurity and Intelligent Applications Rapid Prototyping Platform. Real-time Team Locking & Google Sheets Sync Enabled.
+      </p>
+      <div class="footer-links">
+        <a href="#mainNavbar">Back to Top</a>
+        <span>•</span>
+        <a href="javascript:void(0)" onclick="openModal('rulesModal')">General Rules</a>
+        <span>•</span>
+        <a href="javascript:void(0)" onclick="openModal('adminModal')">Admin Dashboard</a>
+      </div>
+      <div style="font-size: 0.75rem; color: var(--text-muted); font-family: var(--font-mono); margin-top: 0.5rem;">
+        &copy; 2026 SHRISTI Hackathon Operations. All rights reserved.
+      </div>
+    </div>
+  </footer>
+
+  <!-- ==================== MODALS ==================== -->
+
+  <!-- 1. Closed Login Modal (No Sign Up Button) -->
+  <div class="modal-overlay" id="loginModal">
+    <div class="modal-container login-box">
+      <div class="modal-header">
+        <h3>Team Portal Login</h3>
+        <button class="modal-close-btn" onclick="closeModal('loginModal')">&times;</button>
+      </div>
+      <form id="loginForm">
+        <div class="modal-body">
+          <div class="login-lock-header">
+            <div class="login-icon-glow">🔒</div>
+            <h4 style="font-size: 1.1rem; color: #fff;">Closed Authentication System</h4>
+            <p style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.3rem;">
+              Sign-up is disabled. Log in with your pre-assigned hackathon credentials provided by the organizer.
+            </p>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="loginUsername">Assigned Username</label>
+            <input type="text" id="loginUsername" class="form-input" placeholder="e.g. alex.cyber" required autocomplete="username">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="loginPassword">Password</label>
+            <input type="password" id="loginPassword" class="form-input" placeholder="Enter assigned password" required autocomplete="current-password">
+          </div>
+
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" onclick="closeModal('loginModal')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Log In & Join Session</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 2. Problem Statement Details Modal -->
+  <div class="modal-overlay" id="problemModal">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h3 id="problemModalTitle">Problem Statement Specification</h3>
+        <button class="modal-close-btn" onclick="closeModal('problemModal')">&times;</button>
+      </div>
+      <div class="modal-body" id="problemModalBody">
+        <!-- Injected dynamically -->
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" onclick="closeModal('problemModal')">Close</button>
+        <button type="button" class="btn btn-primary" id="problemModalSelectBtn">Select For Team</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. General Rules Dedicated Modal -->
+  <div class="modal-overlay" id="rulesModal">
+    <div class="modal-container">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+          <span style="font-size: 1.4rem;">📜</span>
+          <h3 style="font-size: 1.35rem;">General Hackathon Rules</h3>
+        </div>
+        <button class="modal-close-btn" onclick="closeModal('rulesModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0.5rem;">
+          The following 10 rules apply to all rapid prototyping participants. Failure to adhere may result in point deductions or disqualification.
+        </p>
+        <div class="rules-list">
+          <!-- Exact 10 rules rendered -->
+          <div class="rule-item-card">
+            <div class="rule-number">1</div>
+            <div class="rule-content">
+              <h4 class="rule-title">Prototype Delivery Within Allotted Time</h4>
+              <p class="rule-desc">Teams must submit a working prototype within the allotted time.</p>
+            </div>
+          </div>
+
+          <div class="rule-item-card">
+            <div class="rule-number">2</div>
+            <div class="rule-content">
+              <h4 class="rule-title">Permitted AI and Tool Usage</h4>
+              <p class="rule-desc">Participants may use AI coding assistants, open-source libraries, and permitted APIs.</p>
+            </div>
+          </div>
+
+          <div class="rule-item-card">
+            <div class="rule-number">3</div>
+            <div class="rule-content">
+              <h4 class="rule-title">Transparency on Implemented vs Simulated</h4>
+              <p class="rule-desc">Teams must clearly explain which features are implemented and which are simulated.</p>
+            </div>
+          </div>
+
+          <div class="rule-item-card">
+            <div class="rule-number">4</div>
+            <div class="rule-content">
+              <h4 class="rule-title">Core Functionality Demonstration</h4>
+              <p class="rule-desc">The prototype must demonstrate the core functionality of the selected problem statement.</p>
+            </div>
+          </div>
+
+          <div class="rule-item-card">
+            <div class="rule-number">5</div>
+            <div class="rule-content">
+              <h4 class="rule-title">No Faked Live Detections</h4>
+              <p class="rule-desc">Participants must not present sample or simulated results as genuine live detections.</p>
+            </div>
+          </div>
+
+          <div class="rule-item-card">
+            <div class="rule-number">6</div>
+            <div class="rule-content">
+              <h4 class="rule-title">Attribution and Citation</h4>
+              <p class="rule-desc">All datasets, APIs, and external resources used must be acknowledged.</p>
+            </div>
+          </div>
+
+          <div class="rule-item-card">
+            <div class="rule-number">7</div>
+            <div class="rule-content">
+              <h4 class="rule-title">Legal, Privacy and Consent Compliance</h4>
+              <p class="rule-desc">Teams must respect privacy, consent, copyright, and applicable laws.</p>
+            </div>
+          </div>
+
+          <div class="rule-item-card">
+            <div class="rule-number">8</div>
+            <div class="rule-content">
+              <h4 class="rule-title">Restricted Sensitive Data</h4>
+              <p class="rule-desc">Participants must not upload private or sensitive recordings without proper permission.</p>
+            </div>
+          </div>
+
+          <div class="rule-item-card">
+            <div class="rule-number">9</div>
+            <div class="rule-content">
+              <h4 class="rule-title">Uncertainty & Responsible Claims</h4>
+              <p class="rule-desc">Detection systems must communicate uncertainty and must not make unsupported claims.</p>
+            </div>
+          </div>
+
+          <div class="rule-item-card">
+            <div class="rule-number">10</div>
+            <div class="rule-content">
+              <h4 class="rule-title">Live Demonstration & Evaluation</h4>
+              <p class="rule-desc">Judges may evaluate the prototype through a live demonstration and questions.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" onclick="closeModal('rulesModal')">I Understand and Agree</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirm Reveal & Selection Modal -->
+  <div class="modal-overlay" id="confirmRevealModal">
+    <div class="modal-container" style="max-width: 520px;">
+      <div class="modal-header">
+        <h3 id="confirmRevealModalTitle">Confirm Mystery Card Selection</h3>
+        <button class="modal-close-btn" onclick="closeModal('confirmRevealModal')">&times;</button>
+      </div>
+      <div class="modal-body" style="text-align: center; padding: 2rem;">
+        <div class="mystery-icon-badge" style="width: 72px; height: 72px; font-size: 2rem; margin: 0 auto 1.25rem;">
+          ⚡
+        </div>
+        <h4 style="font-size: 1.25rem; color: #fff; margin-bottom: 0.5rem;" id="confirmRevealCardName">
+          Decrypt & Reveal Card #01?
+        </h4>
+        <p style="font-size: 0.88rem; color: var(--text-secondary); line-height: 1.6; margin-bottom: 1.25rem;">
+          Once confirmed, this problem statement will be <strong style="color: var(--neon-cyan);">permanently revealed</strong> and locked as the <strong style="color: var(--neon-emerald);">constant problem statement</strong> for <span id="confirmRevealTeamName" style="color: #fff; font-weight: 700;">your team</span>.
+        </p>
+        <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: var(--radius-md); padding: 0.75rem 1rem; font-size: 0.8rem; color: #fcd34d; text-align: left;">
+          ⚠️ <strong>Note:</strong> Card selection cannot be undone or re-rolled. Other challenge cards will remain locked for your team.
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" onclick="closeModal('confirmRevealModal')">Cancel</button>
+        <button type="button" class="btn btn-primary" id="confirmRevealExecuteBtn">
+          <span>⚡ Yes, Reveal & Commit</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- 5. Admin & Google Sheets Integration Modal -->
+  <div class="modal-overlay" id="adminModal">
+    <div class="modal-container" style="max-width: 950px;">
+      <div class="modal-header">
+        <div>
+          <h3>Admin Data & Google Sheets Synchronization</h3>
+          <p style="font-size: 0.78rem; color: var(--text-secondary); margin-top: 0.2rem;">
+            Live tracking of Sheet 1 (Attendance), Sheet 2 (Problem Selection), and Sheet 3 (Submissions).
+          </p>
+        </div>
+        <button class="modal-close-btn" onclick="closeModal('adminModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <!-- Live Workforce Summary Banner -->
+        <div class="admin-modal-summary-strip" style="display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.25rem; background: rgba(10, 15, 26, 0.75); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 0.85rem 1.25rem; align-items: center; justify-content: space-between;">
+          <div style="display: flex; align-items: center; gap: 0.6rem;">
+            <span class="status-online-dot"></span>
+            <span style="font-size: 0.88rem; color: #fff; font-weight: 600;">Active Platform Workforce:</span>
+            <span id="modalMetricWorkingMembers" style="color: var(--neon-cyan); font-weight: 700; font-size: 0.95rem;">0 Members Working</span>
+          </div>
+          <div style="display: flex; gap: 1.25rem; font-size: 0.8rem; color: var(--text-muted); font-family: var(--font-mono);">
+            <span>👥 Registered: <strong id="modalMetricTotalMembers" style="color: #fff;">0</strong></span>
+            <span>🟢 Logged In: <strong id="modalMetricLoggedIn" style="color: var(--neon-emerald);">0</strong></span>
+            <span>🛠️ Prototyping: <strong id="modalMetricBuilding" style="color: var(--neon-cyan);">0</strong></span>
+          </div>
+        </div>
+
+        <!-- Webhook Configuration -->
+        <div style="background: rgba(14, 20, 32, 0.8); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1.25rem;">
+          <h4 style="font-size: 0.95rem; color: #fff; margin-bottom: 0.4rem;">Google Apps Script Webhook URL</h4>
+          <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.85rem;">
+            Deploy <code>google_apps_script.js</code> as a Web App in Google Sheets and paste your URL below. If empty, all actions are safely recorded to the local database and real-time simulator.
+          </p>
+          <div style="display: flex; gap: 0.75rem;">
+            <input 
+              type="url" 
+              id="sheetsWebhookUrlInput" 
+              class="form-input" 
+              style="flex: 1;" 
+              placeholder="https://script.google.com/macros/s/AKfycbx.../exec"
+            />
+            <button class="btn btn-primary btn-sm" onclick="showToast('Webhook URL saved to persistent memory!', 'success')">
+              Save Webhook
+            </button>
+          </div>
+        </div>
+
+        <!-- Admin Table Tabs -->
+        <div>
+          <div class="admin-tabs">
+            <button class="admin-tab-btn active" id="btn-admin-attendance" onclick="switchAdminTab('attendance')">
+              Sheet 1: Attendance
+            </button>
+            <button class="admin-tab-btn" id="btn-admin-selection" onclick="switchAdminTab('selection')">
+              Sheet 2: Problem Selection
+            </button>
+            <button class="admin-tab-btn" id="btn-admin-submission" onclick="switchAdminTab('submission')">
+              Sheet 3: Submissions
+            </button>
+            <button class="admin-tab-btn" id="btn-admin-mongo" onclick="switchAdminTab('mongo')">
+              🍃 MongoDB Users
+            </button>
+          </div>
+
+          <!-- Panel 1: Attendance -->
+          <div class="admin-tab-panel" id="panel-admin-attendance" style="margin-top: 1rem;">
+            <div class="table-responsive">
+              <table class="cyber-table">
+                <thead>
+                  <tr>
+                    <th>Username</th>
+                    <th>Team Name</th>
+                    <th>Full Name</th>
+                    <th>Login Timestamp</th>
+                  </tr>
+                </thead>
+                <tbody id="adminAttendanceTbody">
+                  <!-- Injected via app.js -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Panel 2: Problem Selection -->
+          <div class="admin-tab-panel" id="panel-admin-selection" style="margin-top: 1rem; display: none;">
+            <div class="table-responsive">
+              <table class="cyber-table">
+                <thead>
+                  <tr>
+                    <th>Team Name</th>
+                    <th>Selected Problem Statement</th>
+                    <th>Selected By</th>
+                    <th>Time of Selection</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="adminSelectionTbody">
+                  <!-- Injected via app.js -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Panel 3: Submissions -->
+          <div class="admin-tab-panel" id="panel-admin-submission" style="margin-top: 1rem; display: none;">
+            <div class="table-responsive">
+              <table class="cyber-table">
+                <thead>
+                  <tr>
+                    <th>Team Name</th>
+                    <th>Problem Statement</th>
+                    <th>Submitted Deliverables (GitHub / Drive / Video)</th>
+                    <th>Submitted By</th>
+                    <th>Time of Submission</th>
+                  </tr>
+                </thead>
+                <tbody id="adminSubmissionTbody">
+                  <!-- Injected via app.js -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Panel 4: MongoDB Database Explorer & Config -->
+          <div class="admin-tab-panel" id="panel-admin-mongo" style="margin-top: 1rem; display: none;">
+            <!-- MongoDB Connection Config Card -->
+            <div style="background: rgba(14, 20, 32, 0.8); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1.25rem; margin-bottom: 1.25rem;">
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
+                <div>
+                  <h4 style="font-size: 0.95rem; color: #fff; margin-bottom: 0.2rem;">🍃 MongoDB Database Connection & Cloud Atlas Setup</h4>
+                  <p style="font-size: 0.8rem; color: var(--text-secondary); margin: 0;">
+                    Connect to local MongoDB (<code>mongodb://127.0.0.1:27017/shristi_hackathon</code>) or MongoDB Atlas Cloud.
+                  </p>
+                </div>
+                <div style="display: flex; gap: 0.5rem;">
+                  <button type="button" class="btn btn-outline btn-sm" onclick="seedMongoDatabase()" style="color: var(--neon-cyan); border-color: rgba(0, 242, 254, 0.3);">
+                    ⚡ Seed Users
+                  </button>
+                  <button type="button" class="btn btn-outline btn-sm" onclick="fetchMongoUsers()" style="color: var(--neon-emerald); border-color: rgba(16, 185, 129, 0.3);">
+                    🔄 Refresh Users
+                  </button>
+                </div>
+              </div>
+              
+              <div style="display: flex; gap: 0.75rem; margin-top: 0.85rem;">
+                <input 
+                  type="text" 
+                  id="mongoUriInput" 
+                  class="form-input" 
+                  style="flex: 1; font-family: var(--font-mono); font-size: 0.82rem;" 
+                  placeholder="mongodb://127.0.0.1:27017/shristi_hackathon or mongodb+srv://..." 
+                  value="mongodb://127.0.0.1:27017/shristi_hackathon"
+                />
+                <button type="button" class="btn btn-primary btn-sm" onclick="connectMongoDatabase()">
+                  Connect DB
+                </button>
+              </div>
+            </div>
+
+            <!-- Live MongoDB Stats Grid -->
+            <div class="db-stats-grid">
+              <div class="db-stat-card">
+                <div class="db-stat-label">Connection Status</div>
+                <div class="db-stat-num" id="mongoStatStatus" style="font-size: 1.15rem; color: var(--neon-emerald);">Checking...</div>
+              </div>
+              <div class="db-stat-card">
+                <div class="db-stat-label">Database Name</div>
+                <div class="db-stat-num" id="mongoStatDb" style="font-size: 1.15rem; color: var(--neon-cyan);">shristi_hackathon</div>
+              </div>
+              <div class="db-stat-card">
+                <div class="db-stat-label">Stored Users</div>
+                <div class="db-stat-num" id="mongoStatUsers">0</div>
+              </div>
+              <div class="db-stat-card">
+                <div class="db-stat-label">Registered Teams</div>
+                <div class="db-stat-num" id="mongoStatTeams">0</div>
+              </div>
+            </div>
+
+            <!-- MongoDB User Explorer Table -->
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.65rem;">
+              <h4 style="font-size: 0.92rem; color: #fff; margin: 0;">MongoDB User Database Records</h4>
+              <span style="font-size: 0.78rem; color: var(--text-muted); font-family: var(--font-mono);">Collection: <code>users</code></span>
+            </div>
+            <div class="table-responsive">
+              <table class="cyber-table">
+                <thead>
+                  <tr>
+                    <th>User ID / Username</th>
+                    <th>Full Name</th>
+                    <th>Role</th>
+                    <th>Assigned Team</th>
+                    <th>Created In MongoDB</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="mongoUsersTbody">
+                  <tr>
+                    <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">
+                      Connecting to MongoDB server API...
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" onclick="closeModal('adminModal')">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Scripts -->
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

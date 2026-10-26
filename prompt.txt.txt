@@ -1,0 +1,28 @@
+I need to update the "Submission Portal" of my existing Hackathon Management React application. The current version only asks for a single output link. I need to change the submission form to require three distinct links from the teams.
+
+Please update the submission form UI and the corresponding React state logic with the following requirements:
+
+1. Update the Form Fields:
+Replace the single input field in the Submission form with three clearly labeled, required input fields:
+
+Public GitHub Repository Link: (Type: URL) Add placeholder text like [https://github.com/](https://github.com/)... and a small helper text saying "Ensure the repository is set to Public."
+
+Project Explanation Link (Google Drive): (Type: URL) Add placeholder text like [https://drive.google.com/](https://drive.google.com/)... and a helper text saying "Submit a Google Drive link containing your Word doc, PDF, or presentation. Ensure access is set to 'Anyone with the link can view'."
+
+Working Model Video Link: (Type: URL) Add placeholder text for a video link (YouTube, Drive, etc.) demonstrating the working prototype.
+
+2. Update the State Management:
+
+Change the outputLink state to handle an object with three properties: githubLink, explanationLink, and videoLink.
+
+Update the handleSubmitOutput function so that when the team submits, it saves all three links to the submissions state (and the mock Firebase/Webhook payload).
+
+3. Update the UI/UX:
+
+Stack the three input fields neatly in a column inside the submission card.
+
+Maintain the dark mode, neon-accented (purple/cyan) theme.
+
+Update the "Output transmitted successfully" success screen to display all three submitted links as clickable anchor tags so the team can verify what they submitted.
+
+Please provide the updated code for the HackathonApp component, specifically focusing on the new state variables, the handleSubmitOutput function, and the updated JSX for the submission form section.
