@@ -166,6 +166,10 @@ function logoutUser() {
   State.currentUser = null;
   localStorage.removeItem('shristi_current_user');
   localStorage.removeItem('innovex_current_user');
+  const mongoPill = document.getElementById('mongoStatusPill');
+  const mongoTabBtn = document.getElementById('btn-admin-mongo');
+  if (mongoPill) mongoPill.style.display = 'none';
+  if (mongoTabBtn) mongoTabBtn.style.display = 'none';
   showToast(`${name} has logged out.`, 'info');
   updateUI();
 }
@@ -381,6 +385,8 @@ function updateUserNav() {
   const loginBtn = document.getElementById('navLoginBtn');
   const loginFirstStepSection = document.getElementById('loginFirstStepSection');
   const appDashboardSection = document.getElementById('appDashboardSection');
+  const mongoPill = document.getElementById('mongoStatusPill');
+  const mongoTabBtn = document.getElementById('btn-admin-mongo');
 
   if (State.currentUser) {
     if (loginFirstStepSection) loginFirstStepSection.style.display = 'none';
@@ -390,6 +396,11 @@ function updateUserNav() {
 
     const isSuperAdmin = State.currentUser.role === 'SuperAdmin';
     const isCoordinator = State.currentUser.role === 'Coordinator';
+    
+    // MongoDB controls strictly restricted to SuperAdmin
+    if (mongoPill) mongoPill.style.display = isSuperAdmin ? 'inline-flex' : 'none';
+    if (mongoTabBtn) mongoTabBtn.style.display = isSuperAdmin ? 'inline-block' : 'none';
+
     document.getElementById('navUserName').textContent = State.currentUser.fullName;
     
     if (isSuperAdmin) {
@@ -407,6 +418,8 @@ function updateUserNav() {
     if (appDashboardSection) appDashboardSection.style.display = 'none';
     if (loginBtn) loginBtn.style.display = 'inline-flex';
     if (userProfileContainer) userProfileContainer.style.display = 'none';
+    if (mongoPill) mongoPill.style.display = 'none';
+    if (mongoTabBtn) mongoTabBtn.style.display = 'none';
   }
 }
 
@@ -2252,14 +2265,38 @@ async function initFreshGoogleSheets() {
 
 // Modal Handlers
 function openModal(modalId) {
+  if (modalId === 'adminModal') {
+    if (!State.currentUser || (State.currentUser.role !== 'SuperAdmin' && State.currentUser.role !== 'Coordinator')) {
+      showToast('Access Denied: Admin console is restricted to organizers. Please log in as Admin.', 'error');
+      openModal('loginModal');
+      return;
+    }
+  }
+
   const modal = document.getElementById(modalId);
   if (modal) {
     if (modalId === 'adminModal') {
       renderAdminTables();
+      const isSuperAdmin = State.currentUser && State.currentUser.role === 'SuperAdmin';
+      const mongoBtn = document.getElementById('btn-admin-mongo');
+      if (mongoBtn) mongoBtn.style.display = isSuperAdmin ? 'inline-block' : 'none';
+      if (!isSuperAdmin) {
+        switchAdminTab('attendance');
+      }
     }
     modal.classList.add('active');
     document.body.style.overflow = 'hidden';
   }
+}
+
+function openMongoAdminPanel() {
+  if (!State.currentUser || State.currentUser.role !== 'SuperAdmin') {
+    showToast('Access Denied: MongoDB database controls are strictly restricted to SuperAdmin (Nareen Karthik) only.', 'error');
+    openModal('loginModal');
+    return;
+  }
+  openModal('adminModal');
+  switchAdminTab('mongo');
 }
 
 function closeModal(modalId) {
@@ -2482,6 +2519,13 @@ function quickLogin(username) {
 
 // Switch admin tabs
 function switchAdminTab(tabName) {
+  if (tabName === 'mongo') {
+    if (!State.currentUser || State.currentUser.role !== 'SuperAdmin') {
+      showToast('Access Denied: MongoDB database controls are strictly restricted to SuperAdmin (Nareen Karthik) only.', 'error');
+      return;
+    }
+  }
+
   document.querySelectorAll('.admin-tab-btn').forEach(btn => btn.classList.remove('active'));
   document.querySelectorAll('.admin-tab-panel').forEach(panel => panel.style.display = 'none');
 
@@ -2504,15 +2548,41 @@ const MongoAPI = {
   isOnline: false,
   dbStatus: null,
 
+  async parseResponse(res) {
+    const text = await res.text();
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch (parseErr) {
+      if (!res.ok) {
+        return {
+          success: false,
+          status: res.status,
+          message: `Server returned HTTP ${res.status}. If deployed on Vercel, please provide a MongoDB Atlas Cloud URI.`
+        };
+      }
+      return {
+        success: false,
+        message: 'Non-JSON server response: ' + (text.length > 80 ? text.slice(0, 80) + '...' : text)
+      };
+    }
+    if (!res.ok && data && !data.message) {
+      data.message = `Request failed with status ${res.status}`;
+    }
+    return data;
+  },
+
   async checkStatus() {
     try {
       const res = await fetch(`${this.baseUrl}/api/status`, { cache: 'no-store' });
-      if (!res.ok) throw new Error('Status HTTP error');
-      const data = await res.json();
-      this.isOnline = true;
-      this.dbStatus = data.database;
-      this.updateStatusBadge(true, data.database);
-      return data.database;
+      const data = await this.parseResponse(res);
+      if (data && data.database) {
+        this.isOnline = true;
+        this.dbStatus = data.database;
+        this.updateStatusBadge(true, data.database);
+        return data.database;
+      }
+      throw new Error(data?.message || 'Status check failed');
     } catch (e) {
       this.isOnline = false;
       this.dbStatus = null;
@@ -2528,6 +2598,12 @@ const MongoAPI = {
     const statDb = document.getElementById('mongoStatDb');
     const statUsers = document.getElementById('mongoStatUsers');
     const statTeams = document.getElementById('mongoStatTeams');
+
+    // Strictly show MongoDB status pill to SuperAdmin only
+    const isSuperAdmin = State.currentUser && State.currentUser.role === 'SuperAdmin';
+    if (pill) {
+      pill.style.display = isSuperAdmin ? 'inline-flex' : 'none';
+    }
 
     if (!pill || !text) return;
 
@@ -2563,8 +2639,7 @@ const MongoAPI = {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password })
       });
-      const data = await res.json();
-      return data;
+      return await this.parseResponse(res);
     } catch (err) {
       return { success: false, offline: true, message: err.message };
     }
@@ -2573,7 +2648,7 @@ const MongoAPI = {
   async getUsers() {
     try {
       const res = await fetch(`${this.baseUrl}/api/users`, { cache: 'no-store' });
-      return await res.json();
+      return await this.parseResponse(res);
     } catch (e) {
       return { success: false, users: [] };
     }
@@ -2582,7 +2657,7 @@ const MongoAPI = {
   async deleteUser(id) {
     try {
       const res = await fetch(`${this.baseUrl}/api/users/${id}`, { method: 'DELETE' });
-      return await res.json();
+      return await this.parseResponse(res);
     } catch (e) {
       return { success: false, message: e.message };
     }
@@ -2595,7 +2670,7 @@ const MongoAPI = {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(userData)
       });
-      return await res.json();
+      return await this.parseResponse(res);
     } catch (e) {
       return { success: false, message: e.message };
     }
@@ -2608,7 +2683,7 @@ const MongoAPI = {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(teamData)
       });
-      return await res.json();
+      return await this.parseResponse(res);
     } catch (e) {
       return { success: false, message: e.message };
     }
@@ -2621,7 +2696,7 @@ const MongoAPI = {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
       });
-      return await res.json();
+      return await this.parseResponse(res);
     } catch (e) {
       return { success: false, message: e.message };
     }
@@ -2634,7 +2709,7 @@ const MongoAPI = {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
       });
-      return await res.json();
+      return await this.parseResponse(res);
     } catch (e) {
       return { success: false, message: e.message };
     }
@@ -2647,7 +2722,7 @@ const MongoAPI = {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(record)
       });
-      return await res.json();
+      return await this.parseResponse(res);
     } catch (e) {
       return { success: false, message: e.message };
     }
@@ -2656,7 +2731,7 @@ const MongoAPI = {
   async seed() {
     try {
       const res = await fetch(`${this.baseUrl}/api/seed`, { method: 'POST' });
-      return await res.json();
+      return await this.parseResponse(res);
     } catch (e) {
       return { success: false, message: e.message };
     }
@@ -2669,7 +2744,7 @@ const MongoAPI = {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ uri })
       });
-      return await res.json();
+      return await this.parseResponse(res);
     } catch (e) {
       return { success: false, message: e.message };
     }
@@ -2678,6 +2753,10 @@ const MongoAPI = {
 
 // Render users in MongoDB User Explorer
 async function fetchMongoUsers() {
+  if (!State.currentUser || State.currentUser.role !== 'SuperAdmin') {
+    return;
+  }
+
   const tbody = document.getElementById('mongoUsersTbody');
   if (!tbody) return;
 
@@ -2725,6 +2804,11 @@ async function fetchMongoUsers() {
 }
 
 async function seedMongoDatabase() {
+  if (!State.currentUser || State.currentUser.role !== 'SuperAdmin') {
+    showToast('Access Denied: SuperAdmin privileges required to seed MongoDB.', 'error');
+    return;
+  }
+
   showToast('Seeding MongoDB database with preloaded accounts...', 'info');
   const res = await MongoAPI.seed();
   if (res && res.success) {
@@ -2732,15 +2816,29 @@ async function seedMongoDatabase() {
     MongoAPI.checkStatus();
     fetchMongoUsers();
   } else {
-    showToast(res?.message || 'Failed to seed MongoDB. Is server.js running?', 'error');
+    showToast(res?.message || 'Failed to seed MongoDB. Is database connected?', 'error');
   }
 }
 
 async function connectMongoDatabase() {
+  if (!State.currentUser || State.currentUser.role !== 'SuperAdmin') {
+    showToast('Access Denied: Only SuperAdmin (Nareen Karthik) can connect or modify MongoDB.', 'error');
+    return;
+  }
+
   const uriInput = document.getElementById('mongoUriInput');
   const uri = uriInput ? uriInput.value.trim() : '';
   if (!uri) {
     showToast('Please enter a MongoDB connection URI.', 'error');
+    return;
+  }
+
+  // Check if running on cloud / Vercel host and user entered localhost / 127.0.0.1
+  const isCloudHost = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+  const isLocalUri = uri.includes('127.0.0.1') || uri.includes('localhost');
+
+  if (isCloudHost && isLocalUri) {
+    showToast('Cloud Notice: 127.0.0.1 cannot be reached from hosted Vercel servers. Please enter a MongoDB Atlas Cloud URI (mongodb+srv://...) or run locally using "node server.js".', 'error');
     return;
   }
 
@@ -2751,11 +2849,16 @@ async function connectMongoDatabase() {
     MongoAPI.checkStatus();
     fetchMongoUsers();
   } else {
-    showToast('MongoDB connection failed: ' + (res?.message || 'Check terminal / URI'), 'error');
+    showToast('MongoDB connection failed: ' + (res?.message || 'Check connection / URI'), 'error');
   }
 }
 
 async function deleteMongoUser(id, username) {
+  if (!State.currentUser || State.currentUser.role !== 'SuperAdmin') {
+    showToast('Access Denied: SuperAdmin privileges required to delete MongoDB users.', 'error');
+    return;
+  }
+
   if (!confirm(`Are you sure you want to delete user "@${username}" from MongoDB?`)) return;
   const res = await MongoAPI.deleteUser(id);
   if (res && res.success) {

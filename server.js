@@ -116,6 +116,14 @@ app.post('/api/connect', async (req, res) => {
     return res.status(400).json({ success: false, message: 'MongoDB URI is required' });
   }
 
+  // If on Vercel, loopback IP (127.0.0.1 / localhost) points to AWS Lambda container, not user machine
+  if (process.env.VERCEL && (uri.includes('127.0.0.1') || uri.includes('localhost'))) {
+    return res.status(400).json({
+      success: false,
+      message: 'Cannot connect to 127.0.0.1 / localhost from Vercel cloud environment. Please provide a MongoDB Atlas Cloud URI (e.g. mongodb+srv://<username>:<password>@cluster.mongodb.net/shristi_hackathon).'
+    });
+  }
+
   try {
     if (mongoose.connection.readyState !== 0) {
       await mongoose.disconnect();
@@ -609,11 +617,15 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// Start Server
-app.listen(PORT, () => {
-  console.log(`\n======================================================`);
-  console.log(`🚀 SHRISTI Hackathon Server with MongoDB Active!`);
-  console.log(`   URL: \x1b[36mhttp://localhost:${PORT}\x1b[0m`);
-  console.log(`   API Endpoint: \x1b[36mhttp://localhost:${PORT}/api/status\x1b[0m`);
-  console.log(`======================================================\n`);
-});
+// Start Server locally if run directly
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`\n======================================================`);
+    console.log(`🚀 SHRISTI Hackathon Server with MongoDB Active!`);
+    console.log(`   URL: \x1b[36mhttp://localhost:${PORT}\x1b[0m`);
+    console.log(`   API Endpoint: \x1b[36mhttp://localhost:${PORT}/api/status\x1b[0m`);
+    console.log(`======================================================\n`);
+  });
+}
+
+module.exports = app;

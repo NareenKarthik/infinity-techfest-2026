@@ -28,7 +28,7 @@
       </div>
     </div>
 
-      <div id="mongoStatusPill" class="mongo-status-pill offline" title="MongoDB User Database Status (Click to manage)" onclick="openModal('adminModal'); switchAdminTab('mongo');">
+      <div id="mongoStatusPill" class="mongo-status-pill offline" style="display: none;" title="MongoDB Database Status (SuperAdmin Only)" onclick="openMongoAdminPanel()">
         <span class="mongo-icon">🍃</span>
         <span class="mongo-dot"></span>
         <span id="mongoStatusText">MongoDB: Standby</span>
@@ -1024,8 +1024,8 @@
             <button class="admin-tab-btn" id="btn-admin-submission" onclick="switchAdminTab('submission')">
               Sheet 3: Submissions
             </button>
-            <button class="admin-tab-btn" id="btn-admin-mongo" onclick="switchAdminTab('mongo')">
-              🍃 MongoDB Users
+            <button class="admin-tab-btn" id="btn-admin-mongo" style="display: none;" onclick="switchAdminTab('mongo')">
+              🍃 MongoDB Users (Admin Only)
             </button>
           </div>
 
@@ -1094,9 +1094,12 @@
             <div style="background: rgba(14, 20, 32, 0.8); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1.25rem; margin-bottom: 1.25rem;">
               <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
                 <div>
-                  <h4 style="font-size: 0.95rem; color: #fff; margin-bottom: 0.2rem;">🍃 MongoDB Database Connection & Cloud Atlas Setup</h4>
+                  <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.2rem;">
+                    <h4 style="font-size: 0.95rem; color: #fff; margin: 0;">🍃 MongoDB Database Connection & Cloud Atlas Setup</h4>
+                    <span style="background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.4); color: #f59e0b; font-size: 0.7rem; font-weight: 700; padding: 0.15rem 0.5rem; border-radius: 9999px;">👑 SuperAdmin Only</span>
+                  </div>
                   <p style="font-size: 0.8rem; color: var(--text-secondary); margin: 0;">
-                    Connect to local MongoDB (<code>mongodb://127.0.0.1:27017/shristi_hackathon</code>) or MongoDB Atlas Cloud.
+                    Connect to MongoDB Atlas Cloud (<code>mongodb+srv://...</code> for Vercel) or local MongoDB (<code>mongodb://127.0.0.1:27017/shristi_hackathon</code> for local dev).
                   </p>
                 </div>
                 <div style="display: flex; gap: 0.5rem;">
